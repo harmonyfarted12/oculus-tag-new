@@ -1,4 +1,3 @@
-```ts
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import crypto from "crypto";
 
@@ -28,5 +27,3 @@ export default function handler(
     challenge_nonce: nonce,
   });
 }
-```
-
