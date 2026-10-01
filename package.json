@@ -1,1 +1,16 @@
+{
+  "name": "oculus-tag-new",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@vercel/node": "^5.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
+```
 
