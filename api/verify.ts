@@ -98,5 +98,135 @@ export default async function handler(
       return res.status(403).json({
         valid: false,
         message: "Invalid response from Meta",
-```
+      });
+    }
 
+    if (result.message !== "success" || !result.claims) {
+      return res.status(403).json({
+        valid: false,
+        message: result.message || "Attestation rejected",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // Decode the verified claims returned by Meta
+    // ---------------------------------------------------------
+
+    let claims: AttestationClaims;
+
+    try {
+      claims = JSON.parse(
+        decodeBase64Url(result.claims)
+      );
+    } catch {
+      return res.status(403).json({
+        valid: false,
+        message: "Could not decode attestation claims",
+      });
+    }
+
+    const requestDetails =
+      claims.request_details;
+
+    if (!requestDetails) {
+      return res.status(403).json({
+        valid: false,
+        message: "Missing request details",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // Verify nonce
+    // ---------------------------------------------------------
+
+    if (requestDetails.nonce !== challengeNonce) {
+      return res.status(403).json({
+        valid: false,
+        message: "Nonce mismatch",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // Verify expiration
+    // ---------------------------------------------------------
+
+    const currentTime =
+      Math.floor(Date.now() / 1000);
+
+    if (
+      !requestDetails.exp ||
+      requestDetails.exp <= currentTime
+    ) {
+      return res.status(403).json({
+        valid: false,
+        message: "Attestation token expired",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // Optional integrity checks
+    //
+    // You should replace these with the values belonging
+    // to YOUR application.
+    // ---------------------------------------------------------
+
+    if (
+      claims.device_integrity &&
+      claims.device_integrity !== "Basic" &&
+      claims.device_integrity !== "Advanced"
+    ) {
+      return res.status(403).json({
+        valid: false,
+        message: "Device integrity check failed",
+      });
+    }
+
+    // ---------------------------------------------------------
+    // Everything passed
+    // ---------------------------------------------------------
+
+    return res.status(200).json({
+      valid: true,
+      message: "Attestation successful",
+
+      // Useful information for your backend.
+      // Do not return secrets.
+      device_integrity:
+        claims.device_integrity || null,
+
+      app_integrity_state:
+        claims.app_integrity_state || null,
+
+      package_name:
+        claims.package_name || null,
+    });
+
+  } catch (error) {
+    console.error(
+      "Attestation verification error:",
+      error
+    );
+
+    return res.status(500).json({
+      valid: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+// -------------------------------------------------------------
+// Base64URL decoder
+// -------------------------------------------------------------
+
+function decodeBase64Url(value: string): string {
+  let base64 = value
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+
+  while (base64.length % 4 !== 0) {
+    base64 += "=";
+  }
+
+  return Buffer.from(base64, "base64").toString("utf8");
+}
+```
