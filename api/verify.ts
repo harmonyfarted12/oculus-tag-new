@@ -1,4 +1,3 @@
-```ts
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 interface VerifyRequest {
@@ -229,4 +228,3 @@ function decodeBase64Url(value: string): string {
 
   return Buffer.from(base64, "base64").toString("utf8");
 }
-```
